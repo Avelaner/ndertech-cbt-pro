@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, GraduationCap, ShieldCheck, Lock, User, Mail } from 'lucide-react';
 import type { Candidate, User as UserType } from '../types';
 
@@ -7,6 +7,7 @@ interface AuthModalProps {
   onClose: () => void;
   onCandidateLogin: (candidate: Candidate) => void;
   onAdminLogin: (user: UserType) => void;
+  defaultRole?: 'candidate' | 'admin';
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -14,12 +15,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onCandidateLogin,
   onAdminLogin,
+  defaultRole = 'candidate',
 }) => {
-  const [authRole, setAuthRole] = useState<'candidate' | 'admin'>('candidate');
+  const [authRole, setAuthRole] = useState<'candidate' | 'admin'>(defaultRole);
   const [candidateReg, setCandidateReg] = useState('JAMB2026172925');
   const [candidatePass, setCandidatePass] = useState('123456');
   const [adminEmail, setAdminEmail] = useState('admin@ndertech.com');
   const [adminPass, setAdminPass] = useState('password');
+
+  useEffect(() => {
+    if (defaultRole) {
+      setAuthRole(defaultRole);
+    }
+  }, [defaultRole, isOpen]);
 
   if (!isOpen) return null;
 

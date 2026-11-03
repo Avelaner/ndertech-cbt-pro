@@ -1,10 +1,10 @@
 import React from 'react';
-import { GraduationCap, ShieldCheck, UserCheck, LogOut } from 'lucide-react';
+import { GraduationCap, ShieldCheck, UserCheck, LogOut, Home, Laptop } from 'lucide-react';
 import type { Candidate, User } from '../types';
 
 interface NavbarProps {
-  currentTab: 'candidate' | 'admin' | 'exam';
-  setCurrentTab: (tab: 'candidate' | 'admin') => void;
+  currentTab: 'landing' | 'candidate' | 'admin' | 'exam';
+  setCurrentTab: (tab: 'landing' | 'candidate' | 'admin') => void;
   candidate: Candidate | null;
   adminUser: User | null;
   onLogout: () => void;
@@ -24,9 +24,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <button
+          onClick={() => setCurrentTab('landing')}
+          className="flex items-center space-x-3 text-left focus:outline-hidden"
+        >
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm font-bold text-lg">
-            N
+            <Laptop className="w-5 h-5" />
           </div>
           <div>
             <span className="font-bold text-slate-900 text-lg tracking-tight block">
@@ -36,27 +39,40 @@ export const Navbar: React.FC<NavbarProps> = ({
               Universal Assessment & Examination Platform
             </span>
           </div>
-        </div>
+        </button>
 
         {!inExamMode && (
           <div className="flex items-center space-x-2 sm:space-x-4">
             <nav className="flex bg-slate-100 p-1 rounded-xl">
               <button
+                onClick={() => setCurrentTab('landing')}
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                  currentTab === 'landing'
+                    ? 'bg-white text-blue-600 shadow-xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline">Home</span>
+              </button>
+
+              <button
                 onClick={() => setCurrentTab('candidate')}
-                className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
                   currentTab === 'candidate'
-                    ? 'bg-white text-blue-600 shadow-xs'
+                    ? 'bg-white text-blue-600 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <GraduationCap className="w-4 h-4" />
                 <span>Candidate Portal</span>
               </button>
+
               <button
                 onClick={() => setCurrentTab('admin')}
-                className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
                   currentTab === 'admin'
-                    ? 'bg-white text-blue-600 shadow-xs'
+                    ? 'bg-white text-blue-600 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >

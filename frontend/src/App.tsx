@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navbar } from './components/Navbar';
+import { LandingPage } from './components/LandingPage';
 import { CandidatePortal } from './components/CandidatePortal';
 import { AdminPortal } from './components/AdminPortal';
 import { ExamRunner } from './components/ExamRunner';
@@ -7,10 +8,11 @@ import { AuthModal } from './components/AuthModal';
 import type { Candidate, User, Exam, Scorecard, ExamQuestion } from './types';
 
 export function App() {
-  const [currentTab, setCurrentTab] = useState<'candidate' | 'admin'>('candidate');
+  const [currentTab, setCurrentTab] = useState<'landing' | 'candidate' | 'admin'>('landing');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authModalDefaultRole, setAuthModalDefaultRole] = useState<'candidate' | 'admin'>('candidate');
 
-  // Authenticated state (preloaded with default for instant preview)
+  // Authenticated state (preloaded with default credentials for quick testing)
   const [candidate, setCandidate] = useState<Candidate | null>({
     id: 1,
     reg_number: 'JAMB2026172925',
@@ -163,6 +165,17 @@ export function App() {
   const handleLogout = () => {
     setCandidate(null);
     setAdminUser(null);
+    setCurrentTab('landing');
+  };
+
+  const openCandidateLogin = () => {
+    setAuthModalDefaultRole('candidate');
+    setIsAuthOpen(true);
+  };
+
+  const openAdminLogin = () => {
+    setAuthModalDefaultRole('admin');
+    setIsAuthOpen(true);
   };
 
   // If in live exam session
@@ -180,7 +193,8 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#f8fbff] flex flex-col">
+      {/* Show Navbar on all views (landing has its own hero & quick tabs) */}
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -191,6 +205,25 @@ export function App() {
       />
 
       <main className="flex-1">
+        {currentTab === 'landing' && (
+          <LandingPage
+            onOpenCandidateLogin={() => {
+              if (candidate) {
+                setCurrentTab('candidate');
+              } else {
+                openCandidateLogin();
+              }
+            }}
+            onOpenAdminLogin={() => {
+              if (adminUser) {
+                setCurrentTab('admin');
+              } else {
+                openAdminLogin();
+              }
+            }}
+          />
+        )}
+
         {currentTab === 'candidate' && (
           candidate ? (
             <CandidatePortal
@@ -206,7 +239,7 @@ export function App() {
                 Please sign in with your student registration number to access scheduled examinations.
               </p>
               <button
-                onClick={() => setIsAuthOpen(true)}
+                onClick={openCandidateLogin}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
               >
                 Sign In Now
@@ -225,7 +258,7 @@ export function App() {
                 Please authenticate with your administrator credentials to access management controls.
               </p>
               <button
-                onClick={() => setIsAuthOpen(true)}
+                onClick={openAdminLogin}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
               >
                 Sign In Now
@@ -235,12 +268,9 @@ export function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
-        <p>Ndertech CBT Pro © 2026. Universal Assessment & Examination Platform.</p>
-      </footer>
-
       <AuthModal
         isOpen={isAuthOpen}
+        defaultRole={authModalDefaultRole}
         onClose={() => setIsAuthOpen(false)}
         onCandidateLogin={(c) => {
           setCandidate(c);

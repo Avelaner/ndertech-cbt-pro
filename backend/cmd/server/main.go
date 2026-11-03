@@ -61,7 +61,12 @@ func main() {
 			auth.POST("/login", authHandler.AdminLogin)
 			auth.POST("/candidate-login", authHandler.CandidateLogin)
 			auth.POST("/register-org", authHandler.RegisterOrganization)
+			auth.POST("/forgot-password", authHandler.ForgotPassword)
 		}
+
+		// Public Utilities & Plans
+		api.POST("/contact/process-contact", authHandler.ProcessContact)
+		api.GET("/plans", authHandler.GetPlans)
 
 		// Public/Protected Exams
 		exams := api.Group("/exams")

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { LandingPage } from './components/LandingPage';
+import { GalleryPage } from './pages/GalleryPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { CandidatePortal } from './components/CandidatePortal';
 import { AdminPortal } from './components/AdminPortal';
 import { ExamRunner } from './components/ExamRunner';
@@ -8,27 +12,19 @@ import { AuthModal } from './components/AuthModal';
 import type { Candidate, User, Exam, Scorecard, ExamQuestion } from './types';
 
 export function App() {
-  const [currentTab, setCurrentTab] = useState<'landing' | 'candidate' | 'admin'>('landing');
+  const [currentTab, setCurrentTab] = useState<
+    'landing' | 'gallery' | 'login' | 'register' | 'forgot-password' | 'candidate' | 'admin'
+  >('landing');
+
+  const [registerPlan, setRegisterPlan] = useState('starter');
+  const [registerProfile, setRegisterProfile] = useState<'individual' | 'organization'>('organization');
+
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authModalDefaultRole, setAuthModalDefaultRole] = useState<'candidate' | 'admin'>('candidate');
 
-  // Authenticated state (preloaded with default credentials for quick testing)
-  const [candidate, setCandidate] = useState<Candidate | null>({
-    id: 1,
-    reg_number: 'JAMB2026172925',
-    full_name: 'Avela Marcel',
-    email: 'ndertech@gmail.com',
-    program_name: 'JAMB UTME CBT 2027',
-    org_id: 1,
-  });
-
-  const [adminUser, setAdminUser] = useState<User | null>({
-    id: 1,
-    full_name: 'Institution Administrator',
-    email: 'admin@ndertech.com',
-    role: 'admin',
-    org_id: 1,
-  });
+  // Authenticated state (defaults to guest, matching live cPanel visitor experience)
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [adminUser, setAdminUser] = useState<User | null>(null);
 
   // Active examination state
   const [activeExamSession, setActiveExamSession] = useState<{
@@ -168,14 +164,20 @@ export function App() {
     setCurrentTab('landing');
   };
 
-  const openCandidateLogin = () => {
+  const openCandidateLoginModal = () => {
     setAuthModalDefaultRole('candidate');
     setIsAuthOpen(true);
   };
 
-  const openAdminLogin = () => {
+  const openAdminLoginModal = () => {
     setAuthModalDefaultRole('admin');
     setIsAuthOpen(true);
+  };
+
+  const handleNavigateToRegister = (plan = 'starter', profile: 'individual' | 'organization' = 'organization') => {
+    setRegisterPlan(plan);
+    setRegisterProfile(profile);
+    setCurrentTab('register');
   };
 
   // If in live exam session
@@ -192,16 +194,73 @@ export function App() {
     );
   }
 
+  // Full-page views without the default navbar (LoginPage, RegisterPage, ForgotPasswordPage, GalleryPage have their own headers)
+  if (currentTab === 'login') {
+    return (
+      <LoginPage
+        onBackToHome={() => setCurrentTab('landing')}
+        onCandidateLogin={(c) => {
+          setCandidate(c);
+          setCurrentTab('candidate');
+        }}
+        onAdminLogin={(u) => {
+          setAdminUser(u);
+          setCurrentTab('admin');
+        }}
+        onNavigateToRegister={() => setCurrentTab('register')}
+        onNavigateToForgotPassword={() => setCurrentTab('forgot-password')}
+      />
+    );
+  }
+
+  if (currentTab === 'register') {
+    return (
+      <RegisterPage
+        onBackToHome={() => setCurrentTab('landing')}
+        onNavigateToLogin={() => setCurrentTab('login')}
+        initialPlan={registerPlan}
+        initialProfile={registerProfile}
+        onRegisteredCandidate={(c) => {
+          setCandidate(c);
+          setCurrentTab('candidate');
+        }}
+        onRegisteredAdmin={(u) => {
+          setAdminUser(u);
+          setCurrentTab('admin');
+        }}
+      />
+    );
+  }
+
+  if (currentTab === 'forgot-password') {
+    return (
+      <ForgotPasswordPage
+        onBackToHome={() => setCurrentTab('landing')}
+        onNavigateToLogin={() => setCurrentTab('login')}
+      />
+    );
+  }
+
+  if (currentTab === 'gallery') {
+    return (
+      <GalleryPage
+        onBackToHome={() => setCurrentTab('landing')}
+        onOpenLogin={() => setCurrentTab('login')}
+        onOpenRegister={() => setCurrentTab('register')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fbff] flex flex-col">
-      {/* Show Navbar on all views (landing has its own hero & quick tabs) */}
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         candidate={candidate}
         adminUser={adminUser}
         onLogout={handleLogout}
-        onOpenLogin={() => setIsAuthOpen(true)}
+        onOpenLogin={() => setCurrentTab('login')}
+        onOpenRegister={() => setCurrentTab('register')}
       />
 
       <main className="flex-1">
@@ -211,16 +270,19 @@ export function App() {
               if (candidate) {
                 setCurrentTab('candidate');
               } else {
-                openCandidateLogin();
+                openCandidateLoginModal();
               }
             }}
             onOpenAdminLogin={() => {
               if (adminUser) {
                 setCurrentTab('admin');
               } else {
-                openAdminLogin();
+                openAdminLoginModal();
               }
             }}
+            onNavigateToGallery={() => setCurrentTab('gallery')}
+            onNavigateToLogin={() => setCurrentTab('login')}
+            onNavigateToRegister={handleNavigateToRegister}
           />
         )}
 
@@ -234,16 +296,36 @@ export function App() {
             />
           ) : (
             <div className="max-w-md mx-auto text-center py-20 px-4">
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Candidate Sign-In Required</h2>
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold">🎓</span>
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Candidate Sign-In Required</h2>
               <p className="text-sm text-slate-500 mb-6">
-                Please sign in with your student registration number to access scheduled examinations.
+                Please authenticate with your student registration number to access scheduled CBT examinations.
               </p>
-              <button
-                onClick={openCandidateLogin}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
-              >
-                Sign In Now
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => setCurrentTab('login')}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
+                >
+                  Sign In with Credentials
+                </button>
+                <button
+                  onClick={() => {
+                    setCandidate({
+                      id: 1,
+                      reg_number: 'JAMB2026172925',
+                      full_name: 'Avela Marcel',
+                      email: 'ndertech@gmail.com',
+                      program_name: 'JAMB UTME CBT 2027',
+                      org_id: 1,
+                    });
+                  }}
+                  className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all"
+                >
+                  Quick Demo (Avela Marcel)
+                </button>
+              </div>
             </div>
           )
         )}
@@ -253,16 +335,35 @@ export function App() {
             <AdminPortal adminUser={adminUser} exams={availableExams} />
           ) : (
             <div className="max-w-md mx-auto text-center py-20 px-4">
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Sign-In Required</h2>
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold">🛡️</span>
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Administrator Access Required</h2>
               <p className="text-sm text-slate-500 mb-6">
-                Please authenticate with your administrator credentials to access management controls.
+                Please authenticate with your administrator credentials to access platform controls.
               </p>
-              <button
-                onClick={openAdminLogin}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
-              >
-                Sign In Now
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => setCurrentTab('login')}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
+                >
+                  Sign In with Credentials
+                </button>
+                <button
+                  onClick={() => {
+                    setAdminUser({
+                      id: 1,
+                      full_name: 'Institution Administrator',
+                      email: 'admin@ndertech.com',
+                      role: 'admin',
+                      org_id: 1,
+                    });
+                  }}
+                  className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all"
+                >
+                  Quick Demo (Admin)
+                </button>
+              </div>
             </div>
           )
         )}

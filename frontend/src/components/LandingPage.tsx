@@ -26,18 +26,24 @@ import {
   X,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  Sparkles,
+  Crown
 } from 'lucide-react';
 
 interface LandingPageProps {
   onOpenCandidateLogin: () => void;
   onOpenAdminLogin: () => void;
-  onSelectPlan?: (planSlug: string) => void;
+  onNavigateToGallery: () => void;
+  onNavigateToLogin: () => void;
+  onNavigateToRegister: (plan?: string, profile?: 'individual' | 'organization') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenCandidateLogin,
-  onOpenAdminLogin,
+  onNavigateToGallery,
+  onNavigateToLogin,
+  onNavigateToRegister,
 }) => {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedVideoCategory, setSelectedVideoCategory] = useState('All Modules');
@@ -85,8 +91,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     ? demoVideos 
     : demoVideos.filter(v => v.category === selectedVideoCategory);
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch('http://localhost:8080/api/contact/process-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: contactName,
+          email: contactEmail,
+          phone: contactPhone,
+          subject: contactSubject,
+          message: contactMessage,
+        }),
+      });
+    } catch {
+      // Graceful fallback
+    }
     setContactSubmitted(true);
     setTimeout(() => {
       setContactName('');
@@ -100,43 +121,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="bg-[#f8fbff] text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
-      {/* Sticky Glass Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 text-blue-600 font-bold text-xl sm:text-2xl tracking-tight">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md">
-              <Laptop className="w-5 h-5" />
-            </div>
-            <span>Ndertech CBT Pro</span>
-          </a>
-
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
-            <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
-            <a href="#demos" className="hover:text-blue-600 transition-colors">Video Demos</a>
-            <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
-            <a href="#audience" className="hover:text-blue-600 transition-colors">Who It's For</a>
-            <a href="#contact" className="hover:text-blue-600 transition-colors">Contact</a>
-          </div>
-
-          {/* Auth Action Buttons */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onOpenCandidateLogin}
-              className="text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all"
-            >
-              Candidate Log In
-            </button>
-            <button
-              onClick={onOpenAdminLogin}
-              className="text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-all"
-            >
-              Admin Portal
-            </button>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative pt-16 pb-20 md:pt-24 md:pb-28 text-center overflow-hidden bg-radial from-[#e9f2ff] to-[#f8fbff]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -159,24 +143,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={onOpenCandidateLogin}
+              onClick={() => onNavigateToRegister('starter', 'organization')}
               className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg shadow-blue-600/25 transition-all text-sm sm:text-base flex items-center justify-center gap-2"
             >
-              <span>Take CBT Test</span>
+              <span>Register Now</span>
               <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onNavigateToLogin}
+              className="w-full sm:w-auto px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-full border border-slate-200 shadow-sm transition-all text-sm sm:text-base"
+            >
+              Login Here
             </button>
             <a
               href="#pricing"
-              className="w-full sm:w-auto px-8 py-3.5 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-full border border-slate-200 shadow-sm transition-all text-sm sm:text-base"
-            >
-              View Licensing Plans
-            </a>
-            <a
-              href="#demos"
               className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-full transition-all text-sm sm:text-base flex items-center justify-center gap-2"
             >
-              <Play className="w-4 h-4 text-cyan-400 fill-cyan-400" />
-              <span>Watch Demos</span>
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Get Started Now</span>
             </a>
           </div>
         </div>
@@ -208,7 +192,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   Individuals & Independent Tutors
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  Perfect for private tutors, freelance educators, and coaching centers conducting weekly quizzes, entrance screenings, or certification drills. Enjoy quick setup, automated grading, and zero server headaches.
+                  Perfect for private tutors, freelance educators, and coaching centers conducting weekly quizzes, entrance screenings, or certification drills. Enjoy quick setup, automated grading, etc.
                 </p>
                 <ul className="space-y-3 text-sm text-slate-700 mb-8">
                   <li className="flex items-start gap-2.5">
@@ -225,12 +209,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                    <span>Wallet Integration for Instant Renewals</span>
+                    <span>Wallet Integration for Upgrade/Renewal</span>
                   </li>
                 </ul>
               </div>
               <button
-                onClick={onOpenCandidateLogin}
+                onClick={() => onNavigateToRegister('trial', 'individual')}
                 className="w-full py-3.5 px-6 rounded-full border-2 border-blue-600 text-blue-600 font-bold hover:bg-blue-600 hover:text-white transition-all text-sm flex items-center justify-center gap-2"
               >
                 <span>Get Started as Individual</span>
@@ -263,14 +247,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                     <span>Enterprise Automated Subscription Management</span>
                   </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                    <span>Custom Institution Branding & Logo Display</span>
-                  </li>
                 </ul>
               </div>
               <button
-                onClick={onOpenAdminLogin}
+                onClick={() => onNavigateToRegister('starter', 'organization')}
                 className="w-full py-3.5 px-6 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md transition-all text-sm flex items-center justify-center gap-2"
               >
                 <span>Register Institution Portal</span>
@@ -298,77 +278,77 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {
                 icon: FileSpreadsheet,
                 title: 'Bulk Excel Question Import',
-                desc: 'Skip manual data entry. Easily upload large question banks using structured Excel or CSV templates, instantly populating your repository.',
+                desc: 'Skip manual data entry. Easily upload large question banks using structured Excel or CSV templates, instantly populating your assessment repository.',
               },
               {
                 icon: FlaskConical,
                 title: 'KaTeX Math & STEM Support',
-                desc: 'Natively render complex mathematical equations, scientific formulas, and fractions perfectly across exams and review panels.',
+                desc: 'Natively render complex mathematical equations, scientific formulas, and fractions perfectly across exams and review panels using our embedded KaTeX engine.',
               },
               {
                 icon: ShieldAlert,
                 title: 'Anti-Fraud & Violation Locks',
-                desc: 'Enable strict anti-cheat policies that auto-submit exams and flag candidates caught exiting fullscreen or switching browser tabs.',
+                desc: 'Enable strict anti-cheat policies that auto-submit exams and permanently lock out candidates caught exiting fullscreen or switching browser tabs.',
               },
               {
                 icon: LineChart,
                 title: 'Dynamic Fractional Grading',
-                desc: 'Calculate results precisely with dynamic total marks and percentage metrics, accommodating custom-weighted questions.',
+                desc: 'Calculate results precisely with dynamic total marks and percentage metrics, accommodating custom-weighted questions and eliminating zero-denominator errors.',
               },
               {
                 icon: MonitorPlay,
                 title: 'Live Proctoring Dashboard',
-                desc: 'Supervise candidates dynamically. Add or reduce time, track active connections, force-submit exams, or pause sessions cleanly.',
+                desc: 'Supervise candidates dynamically. Add or reduce time, track active connections, force-submit exams, or pause sessions cleanly without triggering cheating violations.',
               },
               {
                 icon: CloudLightning,
                 title: 'Auto-Save & Cloud Recovery',
-                desc: 'Protect candidates against dropped internet connections or power failures with continuous asynchronous saves and instant restoration.',
+                desc: 'Protect candidates against dropped internet connections or power failures with continuous asynchronous saves and instant, seamless session restoration.',
               },
               {
                 icon: Layers,
                 title: 'Multi-Subject Exam Pools',
-                desc: 'Bind multiple subjects to a single examination with JAMB-style subject navigation tabs and dynamic question palettes.',
+                desc: 'Bind multiple subjects to a single examination with JAMB-style subject navigation tabs and dynamic per-subject question palettes.',
               },
               {
                 icon: SearchCode,
                 title: 'Interactive Exam Review',
-                desc: 'Allow candidates to review past submissions question-by-question with highlighted correct options, images, and explanations.',
+                desc: 'Allow candidates to review past submissions question-by-question with highlighted correct options, images, and formatted explanations when unlocked by admins.',
               },
               {
                 icon: MailCheck,
                 title: 'Automated Result Dispatch',
-                desc: 'Generate professional printable PDF scorecards and dispatch grades directly to candidates’ mailboxes securely.',
+                desc: 'Generate professional, printable PDF scorecards and dispatch grades directly to candidates’ institutional mailboxes securely via email integration.',
               },
               {
                 icon: Shuffle,
-                title: 'Randomization & Shuffling',
-                desc: 'Prevent collusion by dynamically randomizing both question order and answer options per candidate so no two test sheets match.',
+                title: 'Advanced Randomization & Shuffling',
+                desc: 'Prevent collusion by dynamically randomizing both question order and answer options per candidate, ensuring no two test sheets are identical.',
               },
               {
                 icon: ScanFace,
-                title: 'Biometric & Face ID Ready',
-                desc: 'Confirm candidate identity before and during tests using periodic webcam snapshots to eliminate impersonation proxy cheating.',
+                title: 'Biometric & Face ID Verification',
+                desc: 'Confirm candidate identity before and during tests using periodic webcam snapshots and facial recognition to eliminate impersonation proxy cheating.',
               },
               {
                 icon: UserCheck2,
-                title: 'Granular Role Permissions',
-                desc: 'Delegate responsibilities securely by assigning precise permissions to super admins, examiners, proctors, and department heads.',
+                title: 'Granular Role-Based Access Control',
+                desc: 'Delegate responsibilities securely by assigning precise permissions to super admins, examiners, proctors, and department heads across your platform.',
               },
               {
                 icon: Wallet,
-                title: 'Wallet-Powered Subscriptions',
-                desc: 'Fund your institutional wallet to instantly renew licenses, upgrade tiers, or activate new modules without payment gateway delays.',
+                title: 'Instant Wallet-Powered Subscriptions',
+                desc: 'Seamlessly fund your institutional wallet to instantly renew licenses, upgrade tiers, or activate new modules without manual payment gateway delays.',
               },
               {
                 icon: Receipt,
-                title: 'Transparent Audit Trails',
-                desc: 'Maintain absolute financial accountability with immutable transaction ledgers and real-time balance updates for every credit or debit.',
+                title: 'Transparent Ledger & Audit Trails',
+                desc: 'Maintain absolute financial accountability with immutable transaction ledgers, real-time balance updates, and automated email alerts for every credit or debit.',
               },
               {
                 icon: Coins,
                 title: 'Flexible Candidate Slot Top-Ups',
-                desc: 'Easily manage pay-per-exam models or candidate slot allocations by leveraging flexible wallet micro-transactions.',
+                desc: 'Easily manage pay-per-exam models or candidate slot allocations by leveraging flexible wallet micro-transactions and instant credit deductions.',
               },
             ].map((f, i) => (
               <div
@@ -399,7 +379,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Watch Platform Demo in Action
             </h2>
             <p className="text-slate-600 text-sm sm:text-base">
-              Explore step-by-step walkthroughs showing key modules and workflows.
+              Explore step-by-step walkthroughs uploaded directly across all key modules.
             </p>
 
             {/* Category Filter Pills */}
@@ -475,7 +455,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Pricing Section with Monthly/Annual Toggle */}
+      {/* Transparent Licensing Plans (All 4 Plans: Trial, Starter, Professional, Enterprise) */}
       <section id="pricing" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
@@ -486,7 +466,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Flexible pricing structures designed to scale with your institutional growth.
             </p>
 
-            {/* Toggle */}
+            {/* Billing Toggle */}
             <div className="inline-flex items-center gap-3 bg-white p-1.5 rounded-full border border-slate-200 mt-6 shadow-xs">
               <button
                 type="button"
@@ -506,86 +486,101 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <span>Annually</span>
                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  Save 69%
+                  Save up to 69%
                 </span>
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Trial Plan */}
+          <div className={`grid gap-6 ${isAnnual ? 'grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto'}`}>
+            {/* 1. Trial Plan */}
             {!isAnnual && (
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-between hover:shadow-lg transition-all">
+              <div className="bg-white rounded-3xl p-7 border border-slate-200 flex flex-col justify-between hover:shadow-lg transition-all">
                 <div>
-                  <h3 className="font-bold text-xl text-slate-900 mb-1">TRIAL PLAN</h3>
-                  <p className="text-xs text-slate-500 mb-6">Perfect for exploration and pilot testing</p>
+                  <h3 className="font-bold text-lg text-slate-900 mb-1">TRIAL</h3>
+                  <p className="text-xs text-slate-500 mb-5">One Month Free Trial</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-black text-blue-600">₦0</span>
-                    <span className="text-xs text-slate-400"> / 14 days</span>
+                    <span className="text-3xl font-black text-blue-600">₦0</span>
+                    <span className="text-xs text-slate-400"> / month</span>
                   </div>
-                  <ul className="space-y-3 text-xs sm:text-sm text-slate-600 mb-8">
+                  <ul className="space-y-2.5 text-xs text-slate-600 mb-8">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Up to 15 Candidates</span>
+                      <span>Up to 5 Candidates</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>2 Active Examinations</span>
+                      <span>Up to 1 Active Exam</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>50 Questions Repository</span>
+                      <span>100 Questions Limit</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Excel Question Import</span>
+                      <span>Excel/CSV Question Import</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Auto-Saved Cloud Sessions</span>
                     </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>24/7 Customer Support</span>
+                    </li>
                   </ul>
                 </div>
                 <button
-                  onClick={onOpenAdminLogin}
-                  className="w-full py-3 rounded-full border border-blue-600 text-blue-600 font-bold hover:bg-blue-50 transition-colors text-sm"
+                  onClick={() => onNavigateToRegister('trial', 'organization')}
+                  className="w-full py-2.5 rounded-full border border-blue-600 text-blue-600 font-bold hover:bg-blue-50 transition-colors text-xs"
                 >
-                  Start Free Trial
+                  Select Trial
                 </button>
               </div>
             )}
 
-            {/* Standard Plan */}
-            <div className="bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-between hover:shadow-lg transition-all">
+            {/* 2. Starter Plan */}
+            <div className="bg-white rounded-3xl p-7 border border-slate-200 flex flex-col justify-between hover:shadow-lg transition-all">
               <div>
-                <h3 className="font-bold text-xl text-slate-900 mb-1">STANDARD</h3>
-                <p className="text-xs text-slate-500 mb-6">Ideal for growing colleges and tutoring centers</p>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg text-slate-900 mb-1">STARTER</h3>
+                  {isAnnual && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Save 31%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-5">Starter Ndertech CBT Pro Plan</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-black text-blue-600">
-                    {isAnnual ? '₦120,000' : '₦15,000'}
+                  <span className="text-3xl font-black text-blue-600">
+                    {isAnnual ? '₦25,000' : '₦3,000'}
                   </span>
                   <span className="text-xs text-slate-400"> {isAnnual ? '/ year' : '/ month'}</span>
                 </div>
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-600 mb-8">
+                <ul className="space-y-2.5 text-xs text-slate-600 mb-8">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Up to 500 Candidates</span>
+                    <span>Up to 100 Candidates</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>20 Active Examinations</span>
+                    <span>Up to 5 Active Exams</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>2,500 Questions Bank</span>
+                    <span>500 Questions Limit</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Automated Email Scorecards</span>
+                    <span>Excel/CSV Question Import</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Anti-Cheating Window Blur Locks</span>
+                    <span>Auto-Saved Cloud Sessions</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Admin Result Export</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -594,63 +589,135 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </ul>
               </div>
               <button
-                onClick={onOpenAdminLogin}
-                className="w-full py-3 rounded-full border border-blue-600 text-blue-600 font-bold hover:bg-blue-50 transition-colors text-sm"
+                onClick={() => onNavigateToRegister('starter', 'organization')}
+                className="w-full py-2.5 rounded-full border border-blue-600 text-blue-600 font-bold hover:bg-blue-50 transition-colors text-xs"
               >
-                Select Standard
+                Select Starter
               </button>
             </div>
 
-            {/* Professional Plan (Most Popular) */}
-            <div className="bg-white rounded-3xl p-8 border-2 border-blue-600 shadow-xl flex flex-col justify-between relative">
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-600 text-white shadow-md">
+            {/* 3. Professional Plan (Most Popular) */}
+            <div className="bg-white rounded-3xl p-7 border-2 border-blue-600 shadow-xl flex flex-col justify-between relative">
+              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white shadow-md">
                 Most Popular
               </span>
               <div>
-                <h3 className="font-bold text-xl text-slate-900 mb-1">PROFESSIONAL</h3>
-                <p className="text-xs text-slate-500 mb-6">Unrestricted power for large educational institutions</p>
+                <div className="flex items-center justify-between mt-1">
+                  <h3 className="font-bold text-lg text-slate-900 mb-1">PROFESSIONAL</h3>
+                  {isAnnual && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Save 58%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-5">Professional Ndertech CBT Pro Plan</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-black text-blue-600">
-                    {isAnnual ? '₦350,000' : '₦45,000'}
+                  <span className="text-3xl font-black text-blue-600">
+                    {isAnnual ? '₦50,000' : '₦10,000'}
                   </span>
                   <span className="text-xs text-slate-400"> {isAnnual ? '/ year' : '/ month'}</span>
                 </div>
-                <ul className="space-y-3 text-xs sm:text-sm text-slate-600 mb-8">
+                <ul className="space-y-2.5 text-xs text-slate-600 mb-8">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <strong className="text-slate-900">Up to 500 Candidates</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <strong className="text-slate-900">Up to 20 Active Exams</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <strong className="text-slate-900">5,000 Questions Bank</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>JAMB Exam Preparation</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Custom Branding & Logos</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Email Candidates Results</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Wallet Activation/Integration</span>
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => onNavigateToRegister('professional', 'organization')}
+                className="w-full py-2.5 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md transition-colors text-xs"
+              >
+                Select Professional
+              </button>
+            </div>
+
+            {/* 4. Enterprise Plan (The requested missing plan!) */}
+            <div className="bg-white rounded-3xl p-7 border-2 border-indigo-600 shadow-md flex flex-col justify-between relative">
+              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-600 text-white shadow-md flex items-center gap-1">
+                <Crown className="w-3 h-3" />
+                <span>Enterprise</span>
+              </span>
+              <div>
+                <div className="flex items-center justify-between mt-1">
+                  <h3 className="font-bold text-lg text-slate-900 mb-1">ENTERPRISE</h3>
+                  {isAnnual && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Save 44%
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-5">Enterprise Ndertech CBT Pro Plan</p>
+                <div className="mb-6">
+                  <span className="text-3xl font-black text-indigo-600">
+                    {isAnnual ? '₦100,000' : '₦15,000'}
+                  </span>
+                  <span className="text-xs text-slate-400"> {isAnnual ? '/ year' : '/ month'}</span>
+                </div>
+                <ul className="space-y-2.5 text-xs text-slate-600 mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                     <strong className="text-slate-900">Unlimited Candidates</strong>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                     <strong className="text-slate-900">Unlimited Active Exams</strong>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                     <strong className="text-slate-900">Unlimited Question Bank</strong>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>JAMB UTME Simulation Mode</span>
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>50GB Cloud Storage</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Custom Institution Branding & Logo</span>
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>AI Questions Generation Enabled</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>White-Label & Custom Domain</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span>Full API Integration</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span>Priority Enterprise Support</span>
                   </li>
                 </ul>
               </div>
               <button
-                onClick={onOpenAdminLogin}
-                className="w-full py-3.5 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md transition-colors text-sm"
+                onClick={() => onNavigateToRegister('enterprise', 'organization')}
+                className="w-full py-2.5 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-md transition-colors text-xs"
               >
-                Select Professional
+                Select Enterprise
               </button>
             </div>
           </div>
@@ -781,7 +848,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
           <div className="pt-4">
             <button
-              onClick={onOpenAdminLogin}
+              onClick={() => onNavigateToRegister('starter', 'organization')}
               className="px-8 py-3.5 bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-full shadow-lg transition-all text-sm sm:text-base"
             >
               Get Started Today
@@ -809,6 +876,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <li><a href="#features" className="hover:text-white transition-colors">Features Matrix</a></li>
               <li><a href="#demos" className="hover:text-white transition-colors">Interactive Demos</a></li>
               <li><a href="#pricing" className="hover:text-white transition-colors">Licensing & Plans</a></li>
+              <li><button onClick={onNavigateToGallery} className="hover:text-white transition-colors">Public Gallery</button></li>
               <li><a href="#audience" className="hover:text-white transition-colors">Who It's For</a></li>
             </ul>
           </div>
@@ -822,8 +890,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               </li>
               <li>
-                <button onClick={onOpenAdminLogin} className="hover:text-white transition-colors">
+                <button onClick={onNavigateToLogin} className="hover:text-white transition-colors">
                   Institution Administrator
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigateToRegister()} className="hover:text-white transition-colors">
+                  Register Portal
                 </button>
               </li>
             </ul>

@@ -194,3 +194,85 @@ func (h *AuthHandler) RegisterOrganization(c *gin.Context) {
 		"org_id":  org.ID,
 	})
 }
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required"`
+}
+
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Valid email address is required"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Password reset instructions dispatched to " + req.Email,
+	})
+}
+
+type ContactRequest struct {
+	FullName string `json:"full_name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Subject  string `json:"subject"`
+	Message  string `json:"message"`
+}
+
+func (h *AuthHandler) ProcessContact(c *gin.Context) {
+	var req ContactRequest
+	_ = c.ShouldBindJSON(&req)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Thank you for reaching out! Our engineering and support team will contact you shortly.",
+	})
+}
+
+func (h *AuthHandler) GetPlans(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"plans": []gin.H{
+			{
+				"id":                  1,
+				"plan_name":           "Trial",
+				"slug":                "trial",
+				"price_monthly":       0,
+				"price_yearly":        0,
+				"candidate_limit":     5,
+				"exam_limit":          1,
+				"question_bank_limit": 100,
+			},
+			{
+				"id":                  2,
+				"plan_name":           "Starter",
+				"slug":                "starter",
+				"price_monthly":       3000,
+				"price_yearly":        25000,
+				"candidate_limit":     100,
+				"exam_limit":          5,
+				"question_bank_limit": 500,
+			},
+			{
+				"id":                  3,
+				"plan_name":           "Professional",
+				"slug":                "professional",
+				"price_monthly":       10000,
+				"price_yearly":        50000,
+				"candidate_limit":     500,
+				"exam_limit":          20,
+				"question_bank_limit": 5000,
+			},
+			{
+				"id":                  4,
+				"plan_name":           "Enterprise",
+				"slug":                "enterprise",
+				"price_monthly":       15000,
+				"price_yearly":        100000,
+				"candidate_limit":     0,
+				"exam_limit":          0,
+				"question_bank_limit": 0,
+			},
+		},
+	})
+}

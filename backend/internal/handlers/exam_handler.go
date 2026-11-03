@@ -18,28 +18,31 @@ func NewExamHandler() *ExamHandler {
 
 func (h *ExamHandler) ListExams(c *gin.Context) {
 	if database.DB == nil {
-		c.JSON(http.StatusOK, gin.H{
-			"exams": []gin.H{
-				{
-					"id":               1,
-					"title":            "JAMB UTME Mock CBT 2027",
-					"subject_name":     "General Combined (Eng, Maths, Chem, Phy)",
-					"duration_minutes": 120,
-					"total_questions":  60,
-					"pass_mark":        50.0,
-					"is_active":        true,
-				},
-				{
-					"id":               2,
-					"title":            "Biology Students Assessment 2027",
-					"subject_name":     "Biology",
-					"duration_minutes": 45,
-					"total_questions":  40,
-					"pass_mark":        50.0,
-					"is_active":        true,
-				},
-			},
-		})
+		seedExams := database.GetExams()
+		seedSubjects := database.GetSubjects()
+		subjectMap := make(map[uint]string)
+		for _, s := range seedSubjects {
+			subjectMap[s.ID] = s.SubjectName
+		}
+
+		var examsList []gin.H
+		for _, e := range seedExams {
+			subjectName := "General Studies"
+			if e.SubjectID != nil && subjectMap[*e.SubjectID] != "" {
+				subjectName = subjectMap[*e.SubjectID]
+			}
+			examsList = append(examsList, gin.H{
+				"id":               e.ID,
+				"title":            e.Title,
+				"exam_code":        e.ExamCode,
+				"subject_name":     subjectName,
+				"duration_minutes": e.DurationMinutes,
+				"total_questions":  e.TotalQuestions,
+				"pass_mark":        e.PassMark,
+				"is_active":        e.Status == "published" || e.Status == "active",
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{"exams": examsList})
 		return
 	}
 

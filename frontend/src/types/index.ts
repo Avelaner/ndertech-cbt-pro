@@ -1,18 +1,26 @@
 export interface Candidate {
   id: number;
   reg_number: string;
+  registration_number?: string;
   full_name: string;
   email?: string;
-  phone?: string;
+  phone?: string | number;
+  username?: string;
   program_name: string;
   passport_url?: string;
   org_id: number;
+  wallet?: number;
+  licence?: number;
+  status?: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 export interface User {
   id: number;
   full_name: string;
   email: string;
+  username?: string;
   role: 'super_admin' | 'admin' | 'invigilator';
   org_id: number;
 }
@@ -33,6 +41,7 @@ export interface ExamQuestion {
 export interface Exam {
   id: number;
   title: string;
+  exam_code?: string;
   subject_name: string;
   duration_minutes: number;
   total_questions: number;

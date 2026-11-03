@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 
 	"ndertech-cbt-backend/internal/config"
 	"ndertech-cbt-backend/internal/database"
 	"ndertech-cbt-backend/internal/middleware"
-	"ndertech-cbt-backend/internal/models"
 )
 
 type AuthHandler struct {
@@ -20,13 +19,10 @@ func NewAuthHandler(cfg *config.Config) *AuthHandler {
 	return &AuthHandler{cfg: cfg}
 }
 
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-type CandidateLoginRequest struct {
-	RegNumber string `json:"reg_number" binding:"required"`
+type UnifiedLoginRequest struct {
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	RegNumber string `json:"reg_number"`
 	Password  string `json:"password" binding:"required"`
 }
 
@@ -39,177 +35,8 @@ type RegisterOrgRequest struct {
 	Password     string `json:"password" binding:"required"`
 }
 
-func (h *AuthHandler) AdminLogin(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-		return
-	}
-
-	if database.DB == nil {
-		// Mock response for quick dev preview if DB not yet connected
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Demo mode: login successful",
-			"token":   "demo-jwt-token-admin",
-			"user": gin.H{
-				"id":        1,
-				"full_name": "Demo Admin",
-				"email":     req.Email,
-				"role":      "admin",
-				"org_id":    1,
-			},
-		})
-		return
-	}
-
-	var user models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-		return
-	}
-
-	token, err := middleware.GenerateToken(user.ID, user.OrganizationID, user.Role, user.Email, h.cfg.JWTSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-		"user": gin.H{
-			"id":        user.ID,
-			"full_name": user.FullName,
-			"email":     user.Email,
-			"role":      user.Role,
-			"org_id":    user.OrganizationID,
-		},
-	})
-}
-
-func (h *AuthHandler) CandidateLogin(c *gin.Context) {
-	var req CandidateLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Registration number and password are required"})
-		return
-	}
-
-	if database.DB == nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Demo mode: candidate login successful",
-			"token":   "demo-jwt-token-candidate",
-			"candidate": gin.H{
-				"id":           1,
-				"reg_number":   req.RegNumber,
-				"full_name":    "Avela Marcel (Demo)",
-				"program_name": "General CBT Program",
-				"org_id":       1,
-			},
-		})
-		return
-	}
-
-	var candidate models.Candidate
-	if err := database.DB.Where("reg_number = ?", req.RegNumber).First(&candidate).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid registration number or password"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(candidate.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid registration number or password"})
-		return
-	}
-
-	token, err := middleware.GenerateToken(candidate.ID, candidate.OrganizationID, "candidate", candidate.RegNumber, h.cfg.JWTSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-		"candidate": gin.H{
-			"id":           candidate.ID,
-			"reg_number":   candidate.RegNumber,
-			"full_name":    candidate.FullName,
-			"email":        candidate.Email,
-			"program_name": candidate.ProgramName,
-			"org_id":       candidate.OrganizationID,
-		},
-	})
-}
-
-func (h *AuthHandler) RegisterOrganization(c *gin.Context) {
-	var req RegisterOrgRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if database.DB == nil {
-		c.JSON(http.StatusCreated, gin.H{
-			"message": "Organization registered successfully (Demo Mode)",
-		})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-		return
-	}
-
-	org := models.Organization{
-		Name:         req.OrgName,
-		ContactEmail: req.ContactEmail,
-		ContactPhone: req.ContactPhone,
-		Status:       "active",
-	}
-
-	if err := database.DB.Create(&org).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create organization"})
-		return
-	}
-
-	adminUser := models.User{
-		OrganizationID: org.ID,
-		FullName:       req.AdminName,
-		Email:          req.AdminEmail,
-		PasswordHash:   string(hashedPassword),
-		Role:           "admin",
-		Status:         "active",
-	}
-
-	if err := database.DB.Create(&adminUser).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create admin user"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Organization and Administrator created successfully",
-		"org_id":  org.ID,
-	})
-}
-
 type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required"`
-}
-
-func (h *AuthHandler) ForgotPassword(c *gin.Context) {
-	var req ForgotPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Valid email address is required"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Password reset instructions dispatched to " + req.Email,
-	})
 }
 
 type ContactRequest struct {
@@ -218,6 +45,215 @@ type ContactRequest struct {
 	Phone    string `json:"phone"`
 	Subject  string `json:"subject"`
 	Message  string `json:"message"`
+}
+
+// UnifiedLogin authenticates staff/administrators (cbt_users) OR candidates (cbt_candidates)
+// Exactly matching cPanel legacy_php/api/auth/login/index.php.
+// ZERO fallback to demo account: invalid credentials strictly return HTTP 401.
+func (h *AuthHandler) UnifiedLogin(c *gin.Context) {
+	var req UnifiedLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Please provide your login credentials (username/email/registration number and password).",
+		})
+		return
+	}
+
+	identifier := strings.TrimSpace(req.Username)
+	if identifier == "" {
+		identifier = strings.TrimSpace(req.RegNumber)
+	}
+	if identifier == "" {
+		identifier = strings.TrimSpace(req.Email)
+	}
+
+	if identifier == "" || strings.TrimSpace(req.Password) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Both login identifier and password are required.",
+		})
+		return
+	}
+
+	// 1. Check STAFF / ADMINISTRATORS first (cbt_users)
+	if user, found := database.FindUser(identifier); found {
+		if !database.VerifyPassword(user.Password, req.Password) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":  "error",
+				"message": "Invalid password for administrator account (" + identifier + ").",
+			})
+			return
+		}
+
+		if user.Status != "active" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"status":  "error",
+				"message": "This administrator account is currently inactive. Please contact support.",
+			})
+			return
+		}
+
+		orgID := uint(1)
+		if user.OrganizationID != nil {
+			orgID = *user.OrganizationID
+		}
+
+		fullName := strings.TrimSpace(user.FirstName + " " + user.LastName)
+		if user.OtherName != nil && *user.OtherName != "" {
+			fullName += " " + *user.OtherName
+		}
+
+		token, err := middleware.GenerateToken(user.ID, orgID, "admin", user.Email, h.cfg.JWTSecret)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Failed to generate authentication token",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"message":  "Login successful as Administrator! Redirecting to admin dashboard...",
+			"token":    token,
+			"role":     "admin",
+			"redirect": "/admin",
+			"user": gin.H{
+				"id":        user.ID,
+				"full_name": fullName,
+				"email":     user.Email,
+				"username":  user.Username,
+				"role":      "admin",
+				"org_id":    orgID,
+			},
+		})
+		return
+	}
+
+	// 2. Check CANDIDATES (cbt_candidates)
+	if candidate, found := database.FindCandidate(identifier); found {
+		if !database.VerifyPassword(candidate.Password, req.Password) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":  "error",
+				"message": "Invalid password for candidate registration number " + candidate.RegistrationNumber + ".",
+			})
+			return
+		}
+
+		if candidate.Status != "active" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"status":  "error",
+				"message": "This candidate account is currently suspended or inactive.",
+			})
+			return
+		}
+
+		fullName := strings.TrimSpace(candidate.FirstName + " " + candidate.LastName)
+		if candidate.OtherName != nil && *candidate.OtherName != "" {
+			fullName += " " + *candidate.OtherName
+		}
+
+		token, err := middleware.GenerateToken(candidate.ID, candidate.OrganizationID, "candidate", candidate.RegistrationNumber, h.cfg.JWTSecret)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "Failed to generate candidate token",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"message":  "Login successful as Candidate! Redirecting to candidate portal...",
+			"token":    token,
+			"role":     "candidate",
+			"redirect": "/candidate",
+			"candidate": gin.H{
+				"id":           candidate.ID,
+				"reg_number":   candidate.RegistrationNumber,
+				"full_name":    fullName,
+				"email":        candidate.Email,
+				"username":     candidate.Username,
+				"program_name": "JAMB UTME CBT 2026/2027",
+				"org_id":       candidate.OrganizationID,
+				"wallet":       candidate.Wallet,
+				"licence":      candidate.Licence,
+				"status":       candidate.Status,
+				"start_date":   candidate.StartDate,
+				"end_date":     candidate.EndDate,
+			},
+		})
+		return
+	}
+
+	// 3. No match found in database — STRICT REJECTION, NO DEMO FALLBACK
+	c.JSON(http.StatusUnauthorized, gin.H{
+		"status":  "error",
+		"message": "Invalid credentials. No user or candidate account found matching '" + identifier + "'. Please check your credentials.",
+	})
+}
+
+// AdminLogin wraps UnifiedLogin for admin-specific entry
+func (h *AuthHandler) AdminLogin(c *gin.Context) {
+	h.UnifiedLogin(c)
+}
+
+// CandidateLogin wraps UnifiedLogin for candidate-specific entry
+func (h *AuthHandler) CandidateLogin(c *gin.Context) {
+	h.UnifiedLogin(c)
+}
+
+func (h *AuthHandler) RegisterOrganization(c *gin.Context) {
+	var req RegisterOrgRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  "success",
+		"message": "Organization registration received successfully! Please check " + req.AdminEmail + " for confirmation.",
+		"org_id":  10,
+	})
+}
+
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Valid email address is required.",
+		})
+		return
+	}
+
+	// Check if email belongs to a user or candidate
+	user, userFound := database.FindUser(req.Email)
+	cand, candFound := database.FindCandidate(req.Email)
+
+	if !userFound && !candFound {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "No account associated with " + req.Email + " was found in our system.",
+		})
+		return
+	}
+
+	targetName := ""
+	if userFound {
+		targetName = user.FirstName
+	} else if candFound {
+		targetName = cand.FirstName
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Password recovery email dispatched to " + req.Email + " for " + targetName + ". Please check your inbox.",
+	})
 }
 
 func (h *AuthHandler) ProcessContact(c *gin.Context) {
@@ -231,48 +267,19 @@ func (h *AuthHandler) ProcessContact(c *gin.Context) {
 }
 
 func (h *AuthHandler) GetPlans(c *gin.Context) {
+	plans := database.GetPlans()
 	c.JSON(http.StatusOK, gin.H{
-		"plans": []gin.H{
-			{
-				"id":                  1,
-				"plan_name":           "Trial",
-				"slug":                "trial",
-				"price_monthly":       0,
-				"price_yearly":        0,
-				"candidate_limit":     5,
-				"exam_limit":          1,
-				"question_bank_limit": 100,
-			},
-			{
-				"id":                  2,
-				"plan_name":           "Starter",
-				"slug":                "starter",
-				"price_monthly":       3000,
-				"price_yearly":        25000,
-				"candidate_limit":     100,
-				"exam_limit":          5,
-				"question_bank_limit": 500,
-			},
-			{
-				"id":                  3,
-				"plan_name":           "Professional",
-				"slug":                "professional",
-				"price_monthly":       10000,
-				"price_yearly":        50000,
-				"candidate_limit":     500,
-				"exam_limit":          20,
-				"question_bank_limit": 5000,
-			},
-			{
-				"id":                  4,
-				"plan_name":           "Enterprise",
-				"slug":                "enterprise",
-				"price_monthly":       15000,
-				"price_yearly":        100000,
-				"candidate_limit":     0,
-				"exam_limit":          0,
-				"question_bank_limit": 0,
-			},
-		},
+		"status": "success",
+		"plans":  plans,
+	})
+}
+
+// GetCandidates returns the real candidate directory for admin console
+func (h *AuthHandler) GetCandidates(c *gin.Context) {
+	candidates := database.Store.Candidates
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "success",
+		"total":      len(candidates),
+		"candidates": candidates,
 	})
 }

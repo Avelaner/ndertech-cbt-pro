@@ -48,3 +48,4 @@ Thumbs.db
 
 # Legacy PHP archive (kept locally, excluded from git)
 legacy_php/
+backend/internal/database/*.js

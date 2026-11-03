@@ -308,22 +308,7 @@ export function App() {
                   onClick={() => setCurrentTab('login')}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
                 >
-                  Sign In with Credentials
-                </button>
-                <button
-                  onClick={() => {
-                    setCandidate({
-                      id: 1,
-                      reg_number: 'JAMB2026172925',
-                      full_name: 'Avela Marcel',
-                      email: 'ndertech@gmail.com',
-                      program_name: 'JAMB UTME CBT 2027',
-                      org_id: 1,
-                    });
-                  }}
-                  className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all"
-                >
-                  Quick Demo (Avela Marcel)
+                  Sign In to Candidate Account
                 </button>
               </div>
             </div>
@@ -347,21 +332,7 @@ export function App() {
                   onClick={() => setCurrentTab('login')}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all"
                 >
-                  Sign In with Credentials
-                </button>
-                <button
-                  onClick={() => {
-                    setAdminUser({
-                      id: 1,
-                      full_name: 'Institution Administrator',
-                      email: 'admin@ndertech.com',
-                      role: 'admin',
-                      org_id: 1,
-                    });
-                  }}
-                  className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all"
-                >
-                  Quick Demo (Admin)
+                  Sign In to Administrator Console
                 </button>
               </div>
             </div>

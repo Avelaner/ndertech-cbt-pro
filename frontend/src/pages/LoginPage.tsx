@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Laptop, LockOpen, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import type { Candidate, User } from '../types';
+import { verifyCpanelCredentials } from '../data/cpanelData';
 
 interface LoginPageProps {
   onBackToHome: () => void;
@@ -29,45 +30,66 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsLoading(true);
     setErrorMessage(null);
 
-    // Call backend API /api/auth/login or simulate seamlessly
+    const cleanUser = username.trim();
+    const cleanPass = password.trim();
+
+    if (!cleanUser || !cleanPass) {
+      setErrorMessage('Please enter both your login ID and password.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:8080/api/auth/candidate-login', {
+      // 1. Unified authentication via Backend API (port 8080)
+      const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reg_number: username, password }),
+        body: JSON.stringify({ username: cleanUser, password: cleanPass }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.candidate) {
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data && data.status === 'success') {
+        if (data.token) {
+          localStorage.setItem('cbt_token', data.token);
+        }
+        if (data.role === 'admin' && data.user) {
+          onAdminLogin(data.user);
+          return;
+        } else if (data.candidate) {
           onCandidateLogin(data.candidate);
           return;
         }
       }
-    } catch {
-      // Fallback local verification if backend server isn't started yet
-    }
 
-    // Smart role detection matching cPanel login logic
-    if (username.includes('@') || username.toLowerCase().includes('admin')) {
-      onAdminLogin({
-        id: 1,
-        full_name: 'Institution Administrator',
-        email: username,
-        role: 'admin',
-        org_id: 1,
-      });
-    } else {
-      onCandidateLogin({
-        id: 1,
-        reg_number: username || 'JAMB2026172925',
-        full_name: 'Avela Marcel',
-        email: 'ndertech@gmail.com',
-        program_name: 'General CBT Program',
-        org_id: 1,
-      });
+      // If server responded with error (e.g. 401 Unauthorized):
+      if (data && data.message) {
+        setErrorMessage(data.message);
+        setIsLoading(false);
+        return;
+      }
+
+      setErrorMessage('Invalid credentials. Please verify your registration number or email and password.');
+      setIsLoading(false);
+      return;
+    } catch {
+      // 2. Client-side authentication against real cPanel data if backend is offline
+      const result = verifyCpanelCredentials(cleanUser, cleanPass);
+      if (result.success) {
+        if (result.role === 'admin' && result.user) {
+          onAdminLogin(result.user);
+          return;
+        } else if (result.candidate) {
+          onCandidateLogin(result.candidate);
+          return;
+        }
+      } else {
+        // STRICT REJECTION — NO DEMO FALLBACK!
+        setErrorMessage(result.message);
+        setIsLoading(false);
+        return;
+      }
     }
-    setIsLoading(false);
   };
 
   return (

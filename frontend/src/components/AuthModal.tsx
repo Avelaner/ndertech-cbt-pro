@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, GraduationCap, ShieldCheck, Lock, User, Mail } from 'lucide-react';
+import { X, GraduationCap, ShieldCheck, Lock, User, Mail, AlertCircle } from 'lucide-react';
 import type { Candidate, User as UserType } from '../types';
+import { verifyCpanelCredentials } from '../data/cpanelData';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,38 +21,81 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [authRole, setAuthRole] = useState<'candidate' | 'admin'>(defaultRole);
   const [candidateReg, setCandidateReg] = useState('JAMB2026172925');
   const [candidatePass, setCandidatePass] = useState('123456');
-  const [adminEmail, setAdminEmail] = useState('admin@ndertech.com');
-  const [adminPass, setAdminPass] = useState('password');
+  const [adminEmail, setAdminEmail] = useState('nderavela@gmail.com');
+  const [adminPass, setAdminPass] = useState('123456');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (defaultRole) {
       setAuthRole(defaultRole);
+      setErrorMessage(null);
     }
   }, [defaultRole, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (authRole === 'candidate') {
-      onCandidateLogin({
-        id: 1,
-        reg_number: candidateReg || 'JAMB2026172925',
-        full_name: 'Avela Marcel',
-        email: 'ndertech@gmail.com',
-        program_name: 'JAMB UTME CBT 2027',
-        org_id: 1,
-      });
-    } else {
-      onAdminLogin({
-        id: 1,
-        full_name: 'Institution Administrator',
-        email: adminEmail || 'admin@ndertech.com',
-        role: 'admin',
-        org_id: 1,
-      });
+    setErrorMessage(null);
+
+    const identifier = authRole === 'candidate' ? candidateReg.trim() : adminEmail.trim();
+    const password = authRole === 'candidate' ? candidatePass.trim() : adminPass.trim();
+
+    if (!identifier || !password) {
+      setErrorMessage('Please enter both your identifier and password.');
+      return;
     }
-    onClose();
+
+    try {
+      // 1. Try unified authentication via backend API
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: identifier, password }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data && data.status === 'success') {
+        if (data.token) {
+          localStorage.setItem('cbt_token', data.token);
+        }
+        if (data.role === 'admin' && data.user) {
+          onAdminLogin(data.user);
+          onClose();
+          return;
+        } else if (data.candidate) {
+          onCandidateLogin(data.candidate);
+          onClose();
+          return;
+        }
+      }
+
+      if (data && data.message) {
+        setErrorMessage(data.message);
+        return;
+      }
+      setErrorMessage('Invalid credentials. Please verify your credentials.');
+      return;
+    } catch {
+      // 2. Strict cPanel database verification if server offline
+      const result = verifyCpanelCredentials(identifier, password);
+      if (result.success) {
+        if (result.role === 'admin' && result.user) {
+          onAdminLogin(result.user);
+          onClose();
+          return;
+        } else if (result.candidate) {
+          onCandidateLogin(result.candidate);
+          onClose();
+          return;
+        }
+      } else {
+        // STRICT REJECTION — NO DEMO FALLBACK!
+        setErrorMessage(result.message);
+        return;
+      }
+    }
   };
 
   return (
@@ -99,6 +143,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span>Administrator</span>
           </button>
         </div>
+
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {authRole === 'candidate' ? (

@@ -5,7 +5,10 @@ import {
   Clock, 
   ArrowRight, 
   FileText, 
-  Download
+  Download,
+  Wallet,
+  ShieldCheck,
+  Calendar
 } from 'lucide-react';
 import type { Candidate, Exam, Scorecard } from '../types';
 
@@ -70,6 +73,50 @@ export const CandidatePortal: React.FC<CandidatePortalProps> = ({
             <span className="text-lg font-bold text-white flex items-center justify-center sm:justify-end gap-1.5 mt-0.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
               Active Access
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Candidate CBT Metrics Bar (Matching cPanel Candidate Portal) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <Wallet className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Wallet Balance</span>
+            <h3 className="text-xl font-bold text-slate-900">
+              ₦{Number(candidate.wallet ?? 3000).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+            </h3>
+            <span className="text-xs text-emerald-600 font-medium">Ready for auto-renewal</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-slate-400 uppercase">CBT Licence</span>
+            <h3 className="text-xl font-bold text-slate-900">
+              {candidate.licence === 1 ? 'Active Licence' : 'Evaluation Access'}
+            </h3>
+            <span className="text-xs text-blue-600 font-medium">Single-device locked</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Calendar className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Access Period</span>
+            <h3 className="text-sm font-bold text-slate-900 truncate">
+              {candidate.end_date ? new Date(candidate.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Valid Access'}
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">
+              Org ID #{candidate.org_id}
             </span>
           </div>
         </div>

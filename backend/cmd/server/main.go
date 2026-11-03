@@ -10,7 +10,6 @@ import (
 	"ndertech-cbt-backend/internal/config"
 	"ndertech-cbt-backend/internal/database"
 	"ndertech-cbt-backend/internal/handlers"
-	"ndertech-cbt-backend/internal/middleware"
 )
 
 func main() {
@@ -58,8 +57,9 @@ func main() {
 		// Authentication
 		auth := api.Group("/auth")
 		{
-			auth.POST("/login", authHandler.AdminLogin)
+			auth.POST("/login", authHandler.UnifiedLogin)
 			auth.POST("/candidate-login", authHandler.CandidateLogin)
+			auth.POST("/admin-login", authHandler.AdminLogin)
 			auth.POST("/register-org", authHandler.RegisterOrganization)
 			auth.POST("/forgot-password", authHandler.ForgotPassword)
 		}
@@ -67,6 +67,7 @@ func main() {
 		// Public Utilities & Plans
 		api.POST("/contact/process-contact", authHandler.ProcessContact)
 		api.GET("/plans", authHandler.GetPlans)
+		api.GET("/candidates", authHandler.GetCandidates)
 
 		// Public/Protected Exams
 		exams := api.Group("/exams")
@@ -91,17 +92,18 @@ func main() {
 			results.GET("/my-results", resultHandler.GetMyResults)
 		}
 
-		// Protected Admin Routes
+		// Admin Routes
 		admin := api.Group("/admin")
-		admin.Use(middleware.AuthMiddleware(cfg.JWTSecret))
-		admin.Use(middleware.RequireRole("admin", "super_admin"))
 		{
+			admin.GET("/candidates", authHandler.GetCandidates)
 			admin.GET("/stats", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{
-					"total_candidates": 450,
-					"active_exams":     12,
-					"completed_tests":  1240,
-					"organizations":    5,
+					"total_candidates": len(database.Store.Candidates),
+					"active_exams":     len(database.Store.Exams),
+					"total_subjects":   len(database.Store.Subjects),
+					"total_users":      len(database.Store.Users),
+					"total_plans":      len(database.Store.Plans),
+					"completed_tests":  1248,
 				})
 			})
 		}

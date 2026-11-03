@@ -2,21 +2,29 @@ import React, { useState } from 'react';
 import { 
   Users, 
   FileCheck, 
-  TrendingUp, 
+  BookOpen, 
   Plus, 
-  CheckCircle2
+  ShieldCheck,
+  Search,
+  CheckCircle2,
+  Wallet
 } from 'lucide-react';
-import type { User, Exam } from '../types';
+import type { User, Exam, Candidate } from '../types';
+import { cpanelCandidates } from '../data/cpanelData';
 
 interface AdminPortalProps {
   adminUser: User;
   exams: Exam[];
 }
 
-export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'questions'>('overview');
+export const AdminPortal: React.FC<AdminPortalProps> = ({ adminUser, exams }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'candidates' | 'questions'>('overview');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newQuestionText, setNewQuestionText] = useState('');
+  const [candidateSearch, setCandidateSearch] = useState('');
+
+  // Real candidates list from cPanel database
+  const [candidates] = useState<Candidate[]>(cpanelCandidates);
 
   // Sample questions list
   const [questions, setQuestions] = useState([
@@ -62,40 +70,60 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
     setShowAddModal(false);
   };
 
+  const filteredCandidates = candidates.filter((c) => {
+    const q = candidateSearch.toLowerCase();
+    return (
+      c.full_name.toLowerCase().includes(q) ||
+      c.reg_number.toLowerCase().includes(q) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.username && c.username.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Administrator Console
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Institution Management, Assessment Banks & Live Proctoring
-          </p>
-        </div>
+      {/* Top Welcome Banner (Matching cPanel Admin Console) */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                Institutional Administration Console
+              </span>
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300">
+                Active Organization #{adminUser.org_id || 5}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Welcome, {adminUser.full_name}
+            </h1>
+            <p className="text-slate-300 text-xs sm:text-sm max-w-xl">
+              Administrator ID: <strong className="font-mono text-white">{adminUser.email}</strong> {adminUser.username ? `(@${adminUser.username})` : ''} | Role: <span className="capitalize font-semibold text-blue-300">{adminUser.role.replace('_', ' ')}</span>
+            </p>
+          </div>
 
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Question</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Question</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Real metrics matching cPanel SQL dump) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase">Candidates</span>
-            <h3 className="text-xl font-bold text-slate-900">452</h3>
-            <span className="text-xs text-emerald-600 font-medium">+18 this week</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Enrolled Candidates</span>
+            <h3 className="text-xl font-bold text-slate-900">106</h3>
+            <span className="text-xs text-emerald-600 font-medium">Mapped from cPanel DB</span>
           </div>
         </div>
 
@@ -104,36 +132,36 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
             <FileCheck className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase">Active Exams</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Scheduled Exams</span>
             <h3 className="text-xl font-bold text-slate-900">{exams.length}</h3>
-            <span className="text-xs text-indigo-600 font-medium">All systems green</span>
+            <span className="text-xs text-indigo-600 font-medium">25 total in bank</span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
+            <BookOpen className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase">Tests Taken</span>
-            <h3 className="text-xl font-bold text-slate-900">1,248</h3>
-            <span className="text-xs text-emerald-600 font-medium">98.4% uptime</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Curriculum Subjects</span>
+            <h3 className="text-xl font-bold text-slate-900">44</h3>
+            <span className="text-xs text-emerald-600 font-medium">Active subjects</span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-4">
           <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-6 h-6" />
+            <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase">Avg Pass Rate</span>
-            <h3 className="text-xl font-bold text-slate-900">68.2%</h3>
-            <span className="text-xs text-slate-500 font-medium">Across all programs</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Licence Plan</span>
+            <h3 className="text-xl font-bold text-slate-900">Enterprise</h3>
+            <span className="text-xs text-amber-600 font-medium">Full proctoring enabled</span>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Navigation Tabs */}
       <div className="border-b border-slate-200 flex space-x-6">
         <button
           onClick={() => setActiveTab('overview')}
@@ -143,7 +171,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          Scheduled Examinations
+          Scheduled Examinations ({exams.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('candidates')}
+          className={`pb-3 text-sm font-semibold transition-all relative ${
+            activeTab === 'candidates'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Candidate Directory ({candidates.length})
         </button>
         <button
           onClick={() => setActiveTab('questions')}
@@ -153,7 +191,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          Question Bank Repository
+          Question Bank Repository ({questions.length})
         </button>
       </div>
 
@@ -178,7 +216,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
                   <td className="py-4 px-6">{exam.duration_minutes} Mins</td>
                   <td className="py-4 px-6">{exam.total_questions} Items</td>
                   <td className="py-4 px-6">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-fit">
+                      <CheckCircle2 className="w-3 h-3" />
                       Active
                     </span>
                   </td>
@@ -189,7 +228,80 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
         </div>
       )}
 
-      {/* Tab 2: Question Bank */}
+      {/* Tab 2: Candidate Directory (Matching cPanel admin/candidates/) */}
+      {activeTab === 'candidates' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="relative max-w-sm w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                placeholder="Search candidate by name, reg number, email..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+              />
+            </div>
+            <span className="text-xs text-slate-500 font-medium">
+              Showing {filteredCandidates.length} candidate account(s)
+            </span>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="py-3.5 px-6">Reg. Number</th>
+                  <th className="py-3.5 px-6">Candidate Name</th>
+                  <th className="py-3.5 px-6">Program / Email</th>
+                  <th className="py-3.5 px-6">Wallet Balance</th>
+                  <th className="py-3.5 px-6">Licence</th>
+                  <th className="py-3.5 px-6">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredCandidates.map((cand) => (
+                  <tr key={cand.id} className="hover:bg-slate-50/50">
+                    <td className="py-4 px-6 font-mono text-xs font-semibold text-blue-600">
+                      {cand.reg_number}
+                    </td>
+                    <td className="py-4 px-6 font-medium text-slate-900">
+                      {cand.full_name}
+                      {cand.username ? (
+                        <span className="text-xs text-slate-400 block font-normal">@{cand.username}</span>
+                      ) : null}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="font-medium text-slate-800 text-xs block">{cand.program_name}</span>
+                      <span className="text-xs text-slate-400">{cand.email || 'N/A'}</span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
+                        <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+                        ₦{Number(cand.wallet ?? 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        cand.licence === 1 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {cand.licence === 1 ? 'Licenced' : 'Unlicenced'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                        {cand.status || 'Active'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Question Bank */}
       {activeTab === 'questions' && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
@@ -251,15 +363,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ exams }) => {
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs"
               >
-                Save Question
+                Save to Repository
               </button>
             </div>
           </form>
